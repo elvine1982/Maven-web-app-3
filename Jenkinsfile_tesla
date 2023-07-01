@@ -1,41 +1,27 @@
 node{
-  def mavenHome = tool name: 'maven3.8.6'
-  stage('1cloneCode'){
-    git "https://github.com/LandmakTechnology/maven-web-application"
+  def mavenHome = tool name: 'maven3.6.0'
+  stage('1Clone'){
+    //git "https://github.com/elvine1982/Maven-web-app"
+     git branch: 'development', credentialsId: 'landmark2024login', url: 'https://github.com/landmark2024/maven-web-app'
   }
-  stage('2Test&Build'){
+  stage('2Test+build'){
     sh "${mavenHome}/bin/mvn clean package"
-    //bat "${mavenHome}/bin/mvn clean package"
   }
-  stage('3codeQuality'){
-    sh "${mavenHome}/bin/mvn  sonar:sonar"
+  stage('SonarQube'){
+    sh "${mavenHome}/bin/mvn sonar:sonar"
   }
-  stage('4uploadArtifacts'){
-    //sh "${mavenHome}/bin/mvn deploy"
-    //http://52.53.227.31:8191/landmark/repository/tesla-fe-snapshots/
-    //http://52.53.227.31:8191/landmark/repository/tesla-fe-releases/
-    // vi pom.xml and added repository details   
-    // vi setting.xml and add AUTHENTICATION details  
-  } 
-  stage('5deploy2UAT'){
-    sh "echo 'deploy to UAT'  "
-    deploy adapters: [tomcat8(credentialsId: 'tomcat-credentials', path: '', url: 'http://35.170.249.131:8080/')], contextPath: null, war: 'target/*war'
+  stage('4UploadArtifacts'){
+    sh "${mavenHome}/bin/mvn deploy"
   }
-  stage('6approvalGate'){
-    sh "echo 'ready for review' "
-    timeout(time:5, unit:'DAYS') {
-    input message: 'Application ready for deployment, Please review and approve'
-      }
+  stage('5Deploy'){
+    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://18.219.47.137:8177/')], contextPath: null, war: 'target/*war'
   }
-  stage('7deploy2Prod'){
-    sh "sleep  50"
-    deploy adapters: [tomcat8(credentialsId: 'tomcat-credentials', path: '', url: 'http://35.170.249.131:8080/')], contextPath: null, war: 'target/*war'
-  }
-  stage('8emailNotification'){
-    emailext body: '''Hi All,
+  stage('6Notification'){
+    emailext body: '''Hi Team,
 
-Check Build status.
+Build status
 
-Landmark Technologies''', recipientProviders: [buildUser(), developers(), upstreamDevelopers(), brokenBuildSuspects(), brokenTestsSuspects(), contributor()], subject: 'build status', to: 'tesla-app@gmail.com'
+Landmark2024''', recipientProviders: [contributor()], subject: 'builds', to: 'developers'
+
   }
 }
